@@ -1,0 +1,115 @@
+#!/bin/bash
+#
+# winbox-mac-addresses
+#
+# Simple tool for copying Winbox-mac managed addresses from old versions
+# to current. Valid for versions >= 3.20.1
+# Example usage:
+#
+#     winbox-mac-addresses 3.20.1
+#
+
+version=0.1.0
+app_path="/Applications/Winbox-mac.app/"
+app_support_path="$HOME/Library/Application Support/"
+addresses_filename="Addresses.cdb"
+version_regex="^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)"
+
+main() {
+  check_args "$@"
+  parse_arg "$1"
+}
+
+check_args() {
+  if [ $# != 1 ]; then
+    print_help
+    exit 1
+  fi
+}
+
+parse_arg() {
+  case $1 in
+    -h|--help)
+      print_help
+      ;;
+    -v|--version)
+      echo $version
+      ;;
+    -l|--list)
+      list_old_versions
+      ;;
+    *)
+      check_version $1
+      ;;
+  esac
+}
+
+print_help() {
+  cat <<EOS
+Usage: winbox-mac-addresses version
+Given an Winbox-mac version, copies managed addresses
+from that version to the current.
+Supports Winbox-mac 3.20.1 or higher.
+
+  -l, --list                  list versions with managed addresses
+  -h, --help                  display this help and exit
+  -v, --version               output version information and exit
+EOS
+}
+
+list_old_versions() {
+  IFS=$'\n'
+  versions=( $(find "$app_support_path"com.mikrotik.winbox_* -name "$addresses_filename") )
+  unset IFS
+  if [ ${#versions[@]} == 0 ]; then
+    echo "No managed addresses found."
+  else
+    echo "Managed addresses for following versions were found:"
+    for file in "${versions[@]}";
+    do
+      noprefix="${file##${app_support_path}com.mikrotik.winbox_}"
+      echo "${noprefix%/drive_c*}"
+    done
+  fi
+}
+
+check_version() {
+  if [[ $1 =~ $version_regex ]]; then
+    copy_to_new_version $1
+  else
+    echo "Bad version number $1."
+    echo "Use winbox-mac-addresses --list to list versions with managed addresses."
+    exit 1
+  fi
+}
+
+copy_to_new_version() {
+  IFS=$'\n'
+  source=$(find "$app_support_path"com.mikrotik.winbox_* -name "$addresses_filename" | grep -m 1 $1)
+  unset IFS
+  if [ -z "$source" ]; then
+      echo "No managed addresses saved for version $1."
+      echo "Use winbox-mac-addresses --list to list versions with managed addresses."
+      exit 1
+  fi
+  bundle_identifier=$(defaults read "${app_path}Contents/Info" CFBundleIdentifier)
+  current_version="${bundle_identifier##com.mikrotik.winbox_}"
+  if [ $1 == $current_version ]; then
+    echo "Version provided is the latest version."
+  fi
+  dest=${app_support_path}${bundle_identifier}"/drive_c/users/`id -un`/Application Data/Mikrotik/Winbox"
+  if [ ! -d "$dest" ]; then
+    echo "Please run new version once before copying managed addresses."
+    exit 1
+  fi
+  cp "$source" "$dest" >/dev/null 2>&1
+  if [ $? -eq 0 ]; then
+    echo "Managed addresses from version $1 successfully copied to version $current_version."
+    exit 0
+  else
+    echo "Something went wrong copying manages addresses from version $1 to version $current_version." >&2
+    exit 1
+  fi
+}
+
+main "$@"
