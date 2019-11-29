@@ -96,6 +96,7 @@ copy_to_new_version() {
   current_version="${bundle_identifier##com.mikrotik.winbox_}"
   if [ $1 == $current_version ]; then
     echo "Version provided is the latest version."
+    exit 1
   fi
   dest=${app_support_path}${bundle_identifier}"/drive_c/users/`id -un`/Application Data/Mikrotik/Winbox"
   if [ ! -d "$dest" ]; then
