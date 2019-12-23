@@ -17,11 +17,11 @@ version_regex="^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)"
 
 main() {
   check_args "$@"
-  parse_arg "$1"
+  parse_arg "$@"
 }
 
 check_args() {
-  if [ $# != 1 ]; then
+  if [[ $# != 1 ]] && ! [[ $# == 2 && $2 =~ ^(-s|--sessions)$ ]]; then
     print_help
     exit 1
   fi
@@ -39,7 +39,7 @@ parse_arg() {
       list_old_versions
       ;;
     *)
-      check_version $1
+      check_version $@
       ;;
   esac
 }
@@ -50,6 +50,8 @@ Usage: winbox-mac-addresses version
 Given an Winbox-mac version, copies managed addresses
 from that version to the current.
 Supports Winbox-mac 3.20.1 or higher.
+
+  version -s | --sessions     copy saved sessions with managed addresses
 
   -l, --list                  list versions with managed addresses
   -h, --help                  display this help and exit
@@ -75,7 +77,7 @@ list_old_versions() {
 
 check_version() {
   if [[ $1 =~ $version_regex ]]; then
-    copy_to_new_version $1
+    copy_to_new_version $@
   else
     echo "Bad version number $1."
     echo "Use winbox-mac-addresses --list to list versions with managed addresses."
@@ -106,9 +108,20 @@ copy_to_new_version() {
   cp "$source" "$dest" >/dev/null 2>&1
   if [ $? -eq 0 ]; then
     echo "Managed addresses from version $1 successfully copied to version $current_version."
+    if [ $# == 2 ]; then
+      source=${source%Addresses.cdb}sessions
+      cp -R "$source" "$dest" >/dev/null 2>&1
+      if [ $? -eq 0 ]; then
+        echo "Saved sessions from version $1 successfully copied to version $current_version."
+        exit 0
+      else
+        echo "Something went wrong copying saved sessions from version $1 to version $current_version." >&2
+        exit 1
+      fi
+    fi
     exit 0
   else
-    echo "Something went wrong copying manages addresses from version $1 to version $current_version." >&2
+    echo "Something went wrong copying managed addresses from version $1 to version $current_version." >&2
     exit 1
   fi
 }
