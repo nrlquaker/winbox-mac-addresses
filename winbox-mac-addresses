@@ -39,7 +39,7 @@ parse_arg() {
       list_old_versions
       ;;
     *)
-      check_version $@
+      check_version "$@"
       ;;
   esac
 }
@@ -77,7 +77,7 @@ list_old_versions() {
 
 check_version() {
   if [[ $1 =~ $version_regex ]]; then
-    copy_to_new_version $@
+    copy_to_new_version "$@"
   else
     echo "Bad version number $1."
     echo "Use winbox-mac-addresses --list to list versions with managed addresses."
@@ -87,20 +87,20 @@ check_version() {
 
 copy_to_new_version() {
   IFS=$'\n'
-  source=$(find "$app_support_path"com.mikrotik.winbox_* -name "$addresses_filename" | grep -m 1 $1)
+  source=$(find "$app_support_path"com.mikrotik.winbox_* -name "$addresses_filename" | grep -m 1 "$1")
   unset IFS
   if [ -z "$source" ]; then
-      echo "No managed addresses saved for version $1."
-      echo "Use winbox-mac-addresses --list to list versions with managed addresses."
-      exit 1
+    echo "No managed addresses saved for version $1."
+    echo "Use winbox-mac-addresses --list to list versions with managed addresses."
+    exit 1
   fi
   bundle_identifier=$(defaults read "${app_path}Contents/Info" CFBundleIdentifier)
   current_version="${bundle_identifier##com.mikrotik.winbox_}"
-  if [ $1 == $current_version ]; then
+  if [ "$1" == "$current_version" ]; then
     echo "Version provided is the latest version."
     exit 1
   fi
-  dest=${app_support_path}${bundle_identifier}"/drive_c/users/`id -un`/Application Data/Mikrotik/Winbox"
+  dest=${app_support_path}${bundle_identifier}"/drive_c/users/$(id -un)/Application Data/Mikrotik/Winbox"
   if [ ! -d "$dest" ]; then
     echo "Please run new version once before copying managed addresses."
     exit 1
