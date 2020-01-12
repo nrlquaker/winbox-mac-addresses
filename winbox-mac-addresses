@@ -1,9 +1,10 @@
 #!/bin/bash
+
 #
 # winbox-mac-addresses
 #
-# Simple tool for copying Winbox-mac managed addresses from old versions
-# to current. Valid for versions >= 3.20.1
+# Simple tool for copying Winbox-mac managed addresses, sessions and settings
+# from old versions to current. Valid for versions >= 3.20.1
 # Example usage:
 #
 #     winbox-mac-addresses 3.20.1
@@ -13,15 +14,17 @@ version=0.1.1
 app_path="/Applications/Winbox-mac.app/"
 app_support_path="$HOME/Library/Application Support/"
 addresses_filename="Addresses.cdb"
+settings_filename="settings.cfg.viw"
+sessions_folder="sessions"
 version_regex="^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)"
 
 main() {
   check_args "$@"
-  parse_arg "$@"
+  parse_arg "$1"
 }
 
 check_args() {
-  if [[ $# != 1 ]] && ! [[ $# == 2 && $2 =~ ^(-s|--sessions)$ ]]; then
+  if [ $# != 1 ]; then
     print_help
     exit 1
   fi
@@ -39,7 +42,7 @@ parse_arg() {
       list_old_versions
       ;;
     *)
-      check_version "$@"
+      check_version "$1"
       ;;
   esac
 }
@@ -47,11 +50,9 @@ parse_arg() {
 print_help() {
   cat <<EOS
 Usage: winbox-mac-addresses version
-Given an Winbox-mac version, copies managed addresses
+Given an Winbox-mac version, copies managed addresses, sessions and settings
 from that version to the current.
 Supports Winbox-mac 3.20.1 or higher.
-
-  version -s | --sessions     copy saved sessions with managed addresses
 
   -l, --list                  list versions with managed addresses
   -h, --help                  display this help and exit
@@ -77,11 +78,19 @@ list_old_versions() {
 
 check_version() {
   if [[ $1 =~ $version_regex ]]; then
-    copy_to_new_version "$@"
+    copy_to_new_version "$1"
   else
     echo "Bad version number $1."
     echo "Use winbox-mac-addresses --list to list versions with managed addresses."
     exit 1
+  fi
+}
+
+check_result() {
+  if [ "$1" == "0" ]; then
+    printf " Done.\n"
+  else
+    printf " Failed.\n"
   fi
 }
 
@@ -105,25 +114,20 @@ copy_to_new_version() {
     echo "Please run new version once before copying managed addresses."
     exit 1
   fi
+  printf "Copying winbox-mac configs from version $1 to version $current_version:\n"
+  printf "Managed addresses:"
   cp "$source" "$dest" >/dev/null 2>&1
-  if [ $? -eq 0 ]; then
-    echo "Managed addresses from version $1 successfully copied to version $current_version."
-    if [ $# == 2 ]; then
-      source=${source%Addresses.cdb}sessions
-      cp -R "$source" "$dest" >/dev/null 2>&1
-      if [ $? -eq 0 ]; then
-        echo "Saved sessions from version $1 successfully copied to version $current_version."
-        exit 0
-      else
-        echo "Something went wrong copying saved sessions from version $1 to version $current_version." >&2
-        exit 1
-      fi
-    fi
-    exit 0
-  else
-    echo "Something went wrong copying managed addresses from version $1 to version $current_version." >&2
-    exit 1
-  fi
+  check_result $?
+
+  printf "Sessions:"
+  source=${source%$addresses_filename}$sessions_folder
+  cp -R "$source" "$dest" >/dev/null 2>&1
+  check_result $?
+
+  printf "Settings:"
+  source=${source%$sessions_folder}"$settings_filename"
+  cp "$source" "$dest" >/dev/null 2>&1
+  check_result $?
 }
 
 main "$@"

@@ -6,7 +6,7 @@ Simple tool for copying Winbox-mac managed addresses from old versions to curren
 
 ```sh
 Usage: winbox-mac-addresses version
-Given an Winbox-mac version, copies managed addresses
+Given an Winbox-mac version, copies managed addresses, sessions and settings
 from that version to the current.
 Supports Winbox-mac 3.20.1 or higher.
 
