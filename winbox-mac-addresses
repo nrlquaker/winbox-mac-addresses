@@ -10,7 +10,7 @@
 #     winbox-mac-addresses 3.20.1
 #
 
-version=0.1.1
+version=0.2.0
 app_path="/Applications/Winbox-mac.app/"
 app_support_path="$HOME/Library/Application Support/"
 addresses_filename="Addresses.cdb"
