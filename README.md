@@ -1,6 +1,6 @@
 # winbox-mac-addresses
 
-Simple tool for copying Winbox-mac managed addresses, sessions and settings from old versions to current. Supports versions `3.20.1` or higher. Bundled with [Winbox-mac](https://github.com/nrlquaker/winbox-mac).
+Simple tool for copying Winbox-mac managed addresses, sessions and settings from old versions to current. Supports versions `3.20.1` or higher. Bundled with [Winbox-mac](https://github.com/nrlquaker/winbox-mac) till `3.20.5`.
 
 # Usage
 
